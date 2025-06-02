@@ -9,6 +9,6 @@ dist/
 .DS_Store
 coverage/
 .nyc_output/
-.vscode/settings.json
+.vscode/mise-tools
 .idea/
 *.tsbuildinfo
