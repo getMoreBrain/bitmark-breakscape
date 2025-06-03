@@ -768,6 +768,44 @@ const CASES: Case[] = [
       text_tag: '^^]^^[.article^]^^^]^^',
     },
   },
+
+  // ───── intentionally wrong ─────
+  {
+    from: true as unknown as string, // intentionally wrong type
+    to: {
+      bitmarkPlusPlus_body: true as unknown as string, // intentionally wrong type
+      bitmarkPlusPlus_tag: true as unknown as string, // intentionally wrong type
+      text_body: true as unknown as string, // intentionally wrong type
+      text_tag: true as unknown as string, // intentionally wrong type
+    },
+  },
+  {
+    from: false as unknown as string, // intentionally wrong type
+    to: {
+      bitmarkPlusPlus_body: false as unknown as string, // intentionally wrong type
+      bitmarkPlusPlus_tag: false as unknown as string, // intentionally wrong type
+      text_body: false as unknown as string, // intentionally wrong type
+      text_tag: false as unknown as string, // intentionally wrong type
+    },
+  },
+  {
+    from: 0 as unknown as string, // intentionally wrong type
+    to: {
+      bitmarkPlusPlus_body: 0 as unknown as string, // intentionally wrong type
+      bitmarkPlusPlus_tag: 0 as unknown as string, // intentionally wrong type
+      text_body: 0 as unknown as string, // intentionally wrong type
+      text_tag: 0 as unknown as string, // intentionally wrong type
+    },
+  },
+  {
+    from: 1 as unknown as string, // intentionally wrong type
+    to: {
+      bitmarkPlusPlus_body: 1 as unknown as string, // intentionally wrong type
+      bitmarkPlusPlus_tag: 1 as unknown as string, // intentionally wrong type
+      text_body: 1 as unknown as string, // intentionally wrong type
+      text_tag: 1 as unknown as string, // intentionally wrong type
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------

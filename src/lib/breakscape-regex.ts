@@ -145,6 +145,10 @@ class Breakscape {
     if (Array.isArray(val)) {
       return val.map(v => this.breakscape(v, options)) as string[];
     }
+
+    // If an unrecognized type is passed, return it as is (e.g. true, false, 0, 1, etc.)
+    if (!isString(val)) return val as string | undefined;
+
     const { regex, replacer } = selectBreakscapeRegexAndReplacer(
       options.format,
       options.location,
@@ -175,6 +179,10 @@ class Breakscape {
     if (Array.isArray(val)) {
       return val.map(v => this.unbreakscape(v, options)) as string[];
     }
+
+    // If an unrecognized type is passed, return it as is (e.g. true, false, 0, 1, etc.)
+    if (!isString(val)) return val as string | undefined;
+
     const { regex, replacer } = selectUnbreakscapeRegexAndReplacer(
       options.format,
       options.location

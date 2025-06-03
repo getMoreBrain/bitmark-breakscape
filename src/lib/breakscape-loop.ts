@@ -45,6 +45,9 @@ function breakscapeBuf(
   fmt: TextFormatType,
   loc: TextLocationType
 ): string {
+  // If an unrecognized type is passed, return it as is (e.g. true, false, 0, 1, etc.)
+  if (!isString(src)) return src;
+
   const bitmarkText = isBitmarkText(fmt);
   const body = loc === TextLocation.body;
   const inTag = loc === TextLocation.tag;
@@ -191,6 +194,9 @@ function unbreakscapeBuf(
   fmt: TextFormatType,
   loc: TextLocationType
 ): string {
+  // If an unrecognized type is passed, return it as is (e.g. true, false, 0, 1, etc.)
+  if (!isString(src)) return src;
+
   const bitmarkText = isBitmarkText(fmt);
   const isTag = loc === TextLocation.tag;
   const isPlainBody = loc === TextLocation.body && !bitmarkText;
