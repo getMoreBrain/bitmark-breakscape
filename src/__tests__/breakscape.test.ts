@@ -468,6 +468,24 @@ const CASES: Case[] = [
     },
   },
   {
+    from: '[^.',
+    to: {
+      bitmarkPlusPlus_body: '[^^.',
+      bitmarkPlusPlus_tag: '[^^.',
+      text_body: '[^^.',
+      text_tag: '[^^.',
+    },
+  },
+  {
+    from: '[^^.',
+    to: {
+      bitmarkPlusPlus_body: '[^^^.',
+      bitmarkPlusPlus_tag: '[^^^.',
+      text_body: '[^^^.',
+      text_tag: '[^^^.',
+    },
+  },
+  {
     from: '[@',
     to: {
       bitmarkPlusPlus_body: '[^@',

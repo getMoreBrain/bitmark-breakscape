@@ -2,7 +2,7 @@
 
 export const buildInfo = {
   "name": "@gmb/bitmark-breakscape",
-  "version": "0.1.0",
+  "version": "3.30.0",
   "author": "Get More Brain Ltd",
   "license": "ISC",
   "description": "A library for processing and parsing bitmark content with breakscape functionality"
