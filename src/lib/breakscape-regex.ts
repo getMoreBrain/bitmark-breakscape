@@ -5,8 +5,9 @@
  *  (c) 2025 — MIT / public domain
  */
 
-import { TextFormat, TextFormatType } from './model/TextFormat';
-import { TextLocation, TextLocationType } from './model/TextLocation';
+import { BreakscapeOptions } from './model/BreakscapeOptions';
+import { TextFormat } from './model/TextFormat';
+import { TextLocation } from './model/TextLocation';
 
 const REGEX_MARKS = /([*`_!=])(?=\1)/; // BM_TAG: $1^  --BODY: $1^  ++BODY: $1^
 const REGEX_BLOCKS = /^(\|)(code[\s]*|code:|image:|[\s]*$)/; // ++BODY: $2^$3
@@ -82,28 +83,6 @@ const UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER = '$1$2$3';
 // TODO: Not sure this is used any longer. #code blocks are not separate bits as far as I am aware?
 const BREAKSCAPE_CODE_REGEX = new RegExp('^(\\||•|#)', 'gm');
 const BREAKSCAPE_CODE_REGEX_REPLACER = '$1^';
-
-export interface BreakscapeOptions {
-  /**
-   * The format of the text being breakscaped, defaults to TextFormat.bitmarkText
-   */
-  format: TextFormatType;
-
-  /**
-   * The location of the text being breakscaped, defaults to TextLocation.body
-   */
-  location: TextLocationType;
-
-  /**
-   * if true, the original array will be modified rather than a copy being made
-   */
-  inPlaceArray?: boolean;
-
-  /**
-   * if true, perform v2 breakscaping from JSON
-   */
-  v2?: boolean;
-}
 
 const DEF = {
   format: TextFormat.bitmarkPlusPlus,
@@ -343,17 +322,6 @@ class Breakscape {
     }
 
     return { regex, replacer };
-  }
-
-  /**
-   * Concatenate two breakscaped strings.
-   *
-   * @param s1 first string
-   * @param s2 second string
-   * @returns the concatenated string
-   */
-  public concatenate(s1: string, s2: string): string {
-    return (s1 + s2) as string;
   }
 }
 

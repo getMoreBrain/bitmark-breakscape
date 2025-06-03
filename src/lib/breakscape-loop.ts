@@ -8,32 +8,7 @@
 import { TextFormat, TextFormatType } from './model/TextFormat';
 import { TextLocation, TextLocationType } from './model/TextLocation';
 import { buildInfo } from '../generated/build-info';
-
-/**
- * Configuration options for breakscape and unbreakscape operations.
- *
- * @public
- */
-export interface BreakscapeOptions {
-  /**
-   * The text format to use for processing.
-   * @defaultValue TextFormat.bitmarkPlusPlus
-   */
-  format?: TextFormatType; // default: TextFormat.bitmarkPlusPlus
-
-  /**
-   * The text location context for processing.
-   * @defaultValue TextLocation.body
-   */
-  location?: TextLocationType; // default: TextLocation.body
-
-  /**
-   * Whether to mutate the input array in-place when processing arrays.
-   * If false, a new array will be created.
-   * @defaultValue false
-   */
-  inPlaceArray?: boolean; // mutate in‑place?
-}
+import { BreakscapeOptions } from './model/BreakscapeOptions';
 
 const DEF = {
   format: TextFormat.bitmarkPlusPlus,

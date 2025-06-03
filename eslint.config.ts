@@ -1,7 +1,7 @@
-import js from '@eslint/js'
-import tseslint from '@typescript-eslint/eslint-plugin'
-import tsparser from '@typescript-eslint/parser'
-import type { Linter } from 'eslint'
+import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
+import type { Linter } from 'eslint';
 
 const config: Linter.Config[] = [
   js.configs.recommended,
@@ -29,6 +29,31 @@ const config: Linter.Config[] = [
     },
   },
   {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        global: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        // Add more Node.js globals as needed
+      },
+    },
+    env: {
+      node: true,
+      es2021: true,
+    },
+    rules: {},
+  },
+  {
     ignores: [
       'dist/',
       'node_modules/',
@@ -38,6 +63,6 @@ const config: Linter.Config[] = [
       'eslint.config.ts',
     ],
   },
-]
+];
 
-export default config
+export default config;

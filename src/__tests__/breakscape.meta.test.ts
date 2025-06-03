@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Breakscape } from '../lib/breakscape';
+import { Breakscape } from '../lib/breakscape-loop';
 import pkg from '../../package.json' assert { type: 'json' };
 
 describe('Breakscape metadata', () => {
