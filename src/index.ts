@@ -5,4 +5,4 @@
  */
 
 // Main exports go here
-export * from './lib/index'
+export * from './lib/index';

@@ -11,7 +11,7 @@ npm install @gmb/bitmark-breakscape
 ## Usage
 
 ```typescript
-import {} from /* your exports here */ '@gmb/bitmark-breakscape'
+import {} from /* your exports here */ '@gmb/bitmark-breakscape';
 
 // Example usage
 ```
