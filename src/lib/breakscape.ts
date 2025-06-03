@@ -172,20 +172,30 @@ function breakscapeBuf(
       }
     }
 
-    // 6) plain-text “[.” at BOL ------------------------------------------
+    // 6) plain-text "[." or "[^^... ." at BOL
     if (
       !bitmarkText &&
       body &&
       atLineStart &&
       physicalBOC &&
-      ch === 0x5b &&
-      nxt === 0x2e
+      ch === 0x5b /* '[' */
     ) {
-      out.push('[', '^');
-      i++;
-      col++;
-      atLineStart = false;
-      continue;
+      // count carets after '['
+      let j = i + 1;
+      let count = 0;
+      while (j < len && src.charCodeAt(j) === 0x5e /* '^' */) {
+        count++;
+        j++;
+      }
+      // if next char is dot, escape by adding one more caret
+      if (j < len && src.charCodeAt(j) === 0x2e /* '.' */) {
+        out.push('[');
+        for (let k = 0; k < count + 1; k++) out.push('^');
+        col += count + 1;
+        i = j; // skip '[' and all carets, next iteration handles '.'
+        atLineStart = false;
+        continue;
+      }
     }
 
     // default copy --------------------------------------------------------
@@ -227,19 +237,22 @@ function unbreakscapeBuf(
       continue;
     }
 
-    // 2) PLAIN-body “[ ^ .”  with zero indent
-    if (
-      isPlainBody &&
-      bol &&
-      ch === '[' &&
-      src[i + 1] === '^' &&
-      src[i + 2] === '.'
-    ) {
-      out[outPos++] = '[';
-      out[outPos++] = '.';
-      i += 3;
-      bol = false; // we just wrote non-ws on this line
-      continue;
+    // 2) PLAIN-body “[ ^ .” with zero indent
+    if (isPlainBody && bol && ch === '[') {
+      let j = i + 1;
+      let count = 0;
+      while (j < len && src[j] === '^') {
+        count++;
+        j++;
+      }
+      if (count >= 1 && j < len && src[j] === '.') {
+        out[outPos++] = '[';
+        for (let k = 0; k < count - 1; k++) out[outPos++] = '^';
+        out[outPos++] = '.';
+        i = j + 1;
+        bol = false;
+        continue;
+      }
     }
 
     // 3) default copy

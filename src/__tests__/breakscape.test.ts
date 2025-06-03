@@ -81,6 +81,15 @@ const CASES: Case[] = [
       text_tag: '_^^_^^_',
     },
   },
+  {
+    from: '_^^^_^^^_',
+    to: {
+      bitmarkPlusPlus_body: '_^^^^_^^^^_',
+      bitmarkPlusPlus_tag: '_^^^^_^^^^_',
+      text_body: '_^^^_^^^_',
+      text_tag: '_^^^^_^^^^_',
+    },
+  },
 
   // ───── INLINE DOUBLES (body) ─────
   {
