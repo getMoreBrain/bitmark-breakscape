@@ -1,21 +1,7 @@
 /**
- * Core library exports
+ * Breakscape
  */
 
-// Add your main library functions here
-export function hello(name: string): string {
-  return `Hello, ${name}!`;
-}
-
-// Example type definitions
-export interface BitmarkConfig {
-  // Define your configuration interface
-  version?: string;
-}
-
-export interface BreakscapeOptions {
-  // Define your options interface
-  enabled?: boolean;
-}
-
-// Add more exports as you develop the library
+export { Breakscape, type BreakscapeOptions } from './breakscape';
+export { TextFormat, type TextFormatType } from './model/TextFormat';
+export { TextLocation, type TextLocationType } from './model/TextLocation';

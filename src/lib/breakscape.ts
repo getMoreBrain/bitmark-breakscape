@@ -7,16 +7,37 @@
 
 import { TextFormat, TextFormatType } from './model/TextFormat';
 import { TextLocation, TextLocationType } from './model/TextLocation';
+import { buildInfo } from '../generated/build-info';
 
+/**
+ * Configuration options for breakscape and unbreakscape operations.
+ *
+ * @public
+ */
 export interface BreakscapeOptions {
-  textFormat?: TextFormatType; // default: TextFormat.bitmarkText
-  textLocation?: TextLocationType; // default: TextLocation.body
-  modifyArray?: boolean; // mutate in‑place?
+  /**
+   * The text format to use for processing.
+   * @defaultValue TextFormat.bitmarkPlusPlus
+   */
+  format?: TextFormatType; // default: TextFormat.bitmarkPlusPlus
+
+  /**
+   * The text location context for processing.
+   * @defaultValue TextLocation.body
+   */
+  location?: TextLocationType; // default: TextLocation.body
+
+  /**
+   * Whether to mutate the input array in-place when processing arrays.
+   * If false, a new array will be created.
+   * @defaultValue false
+   */
+  inPlaceArray?: boolean; // mutate in‑place?
 }
 
 const DEF = {
-  textFormat: TextFormat.bitmarkText,
-  textLocation: TextLocation.body,
+  format: TextFormat.bitmarkPlusPlus,
+  location: TextLocation.body,
 } as const;
 
 // -----------------------------------------------------------------------------
@@ -24,17 +45,21 @@ const DEF = {
 //  │ 1.  LOW‑LEVEL helpers                                                   │
 //  ╰──────────────────────────────────────────────────────────────────────────╯
 
-// 1‑a) Trigger characters that start a tag‑like construct when they follow "["
-const TRIGGERS = '.@#▼►%!?+-$_=&';
-// 1‑b) “Inline‑double” paired punctuation we have to split with a caret
-const INLINE_DBL = '*`_!=';
+// 1‑a) Trigger characters that start a bit tag construct when they follow "["
+const TRIGGERS = new Set('.@#▼►%!?+-$_=&');
+// 1‑b) Paired punctuation we have to split with a caret
+const HALF_TAGS = new Set(['*', '`', '_', '!', '=']);
 
 /**
  * Predicate – true for every flavour that the spec calls “bitmark text”
  */
-function isBitmark(fmt: TextFormatType): boolean {
-  // Only bitmarkText is defined in TextFormat, so only check for that
-  return fmt === TextFormat.bitmarkText;
+function isBitmarkText(fmt: TextFormatType): boolean {
+  // Only bitmarkPlusPlus is defined in TextFormat, so only check for that
+  return (
+    fmt === TextFormat.bitmarkPlusPlus ||
+    (fmt as string) === 'bitmark+' ||
+    (fmt as string) === 'bitmark--'
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -45,19 +70,27 @@ function breakscapeBuf(
   fmt: TextFormatType,
   loc: TextLocationType
 ): string {
-  const out: string[] = [];
+  const bitmarkText = isBitmarkText(fmt);
+  const body = loc === TextLocation.body;
+  const inTag = loc === TextLocation.tag;
+
   const len = src.length;
 
-  // Track where we are at the start of a physical line ------------------------
-  let atLineStart = true; // true immediately after a '\n' (or BOF)
-  let col = 0; // physical column (counting *original* chars only)
+  // Assume breakscaping will usually increas the length of the string by less than 20%
+  // we can allocate a buffer of that size as reallocation is expensive
+
+  const out = new Array<string>(Math.ceil(len * 1.1)); // upper bound
+
+  let atLineStart = true;
+  let col = 0;
 
   for (let i = 0; i < len; ) {
-    const ch: string = src[i] ?? '';
-    const nxt: string = i + 1 < len ? (src[i + 1] ?? '') : '';
+    const ch = src.charCodeAt(i); // number
+    const nxt = i + 1 < len ? src.charCodeAt(i + 1) : 0;
 
-    // Hard reset after newline ------------------------------------------------
-    if (ch === '\n') {
+    // 1) newline ----------------------------------------------------------
+    if (ch === 0x0a) {
+      // '\n'
       out.push('\n');
       atLineStart = true;
       col = 0;
@@ -65,96 +98,100 @@ function breakscapeBuf(
       continue;
     }
 
-    const isSpace = ch === ' ' || ch === '\t';
-    const firstNonSpace = atLineStart && !isSpace;
-    const atPhysicalBOC = col === 0; // *zero* leading spaces
+    const space = ch === 0x20 || ch === 0x09; // ' ' or '\t'
+    const physicalBOC = col === 0; // zero indent
 
-    // 1) HATS  ^ .. N  →  ^ .. N+1 (only for bitmark OR inside a tag)
-    if ((isBitmark(fmt) || loc === TextLocation.tag) && ch === '^') {
-      let j = i + 1;
-      while (j < len && src[j] === '^') j++;
-      out.push('^'.repeat(j - i + 1)); // insert one extra caret
-      col += j - i; // original characters we consumed
-      i = j;
-      atLineStart = false;
-      continue;
+    // 2) hats -------------------------------------------------------------
+    if (bitmarkText || inTag) {
+      if (ch === 0x5e) {
+        // '^'
+        let j = i + 1;
+        while (j < len && src.charCodeAt(j) === 0x5e) j++;
+        out.push('^'); // extra one
+        out.push(src.slice(i, j)); // original run
+        col += j - i;
+        i = j;
+        atLineStart = false;
+        continue;
+      }
     }
 
-    // 2) INLINE DOUBLES  (**  ==  !!  etc.) – bitmark flavours only
-    if (isBitmark(fmt) && INLINE_DBL.includes(ch)) {
-      out.push(ch);
+    // 3) inline doubles ---------------------------------------------------
+    if (bitmarkText && HALF_TAGS.has(String.fromCharCode(ch))) {
+      out.push(String.fromCharCode(ch));
       if (nxt === ch) out.push('^');
       i++;
-      col += 1;
+      col++;
       atLineStart = false;
       continue;
     }
 
-    // 3) END‑OF‑TAG   …]  →  …^]   (only when inside a tag)
-    if (loc === TextLocation.tag && ch === ']' && src[i - 1] !== '^') {
+    // 4) end-of-tag -------------------------------------------------------
+    if (
+      inTag &&
+      ch === 0x5d /* ']' */ &&
+      (i === 0 || src.charCodeAt(i - 1) !== 0x5e)
+    ) {
       out.push('^', ']');
       i++;
-      col += 1;
+      col++;
       atLineStart = false;
       continue;
     }
 
-    // ---------------------------------------------------------------------
-    // 4) BODY‑ONLY rules that depend on line position
-    // ---------------------------------------------------------------------
-    if (loc === TextLocation.body) {
-      // 4‑a) Block / list / code starters (###  |  •)
-      //      ➜ must be the *very first* non‑space char on the line (col===0),
-      //      must be bitmark, and we avoid duplicating when the *next* char
-      //      is a caret to prevent triple‑^^^ sequences.
+    // 5) body-only rules --------------------------------------------------
+    if (body) {
+      // (a) ### | •  at BOL
       if (
-        firstNonSpace &&
-        atPhysicalBOC &&
-        isBitmark(fmt) &&
-        (ch === '#' || ch === '|' || ch === '•')
+        atLineStart &&
+        physicalBOC &&
+        bitmarkText &&
+        (ch === 0x23 || ch === 0x7c || ch === 0x2022)
       ) {
         let j = i;
-        while (j < len && src[j] === ch) j++;
+        while (j < len && src.charCodeAt(j) === ch) j++;
         out.push(src.slice(i, j));
-        if (nxt !== '^') out.push('^');
+        if (nxt !== 0x5e) out.push('^');
         col += j - i;
         i = j;
         atLineStart = false;
         continue;
       }
 
-      // 4‑b) “[” followed by a trigger char – works anywhere in the line
-      //      (indentation or preceding chars allowed). Works only for bitmark
-      //      flavours. Avoid double‑inserting if a caret is already present.
-      if (isBitmark(fmt) && ch === '[' && TRIGGERS.includes(nxt)) {
+      // (b) '[' + trigger
+      if (
+        bitmarkText &&
+        ch === 0x5b /* '[' */ &&
+        TRIGGERS.has(String.fromCharCode(nxt))
+      ) {
         out.push('[', '^');
-        i++; // leave nxt for next iteration
-        col += 1;
+        i++;
+        col++;
         atLineStart = false;
         continue;
       }
     }
 
-    // 5) PLAIN‑TEXT body – special case “[.” at true line start (no indent)
+    // 6) plain-text “[.” at BOL ------------------------------------------
     if (
-      !isBitmark(fmt) &&
-      loc === TextLocation.body &&
-      firstNonSpace &&
-      atPhysicalBOC &&
-      ch === '[' &&
-      nxt === '.'
+      !bitmarkText &&
+      body &&
+      atLineStart &&
+      physicalBOC &&
+      ch === 0x5b &&
+      nxt === 0x2e
     ) {
       out.push('[', '^');
-      i++; // keep the '.' for next round
-      col += 1;
+      i++;
+      col++;
       atLineStart = false;
       continue;
     }
 
-    // DEFAULT copy ----------------------------------------------------------
-    out.push(ch);
-    if (!isSpace) atLineStart = false;
-    col += 1;
+    // default copy --------------------------------------------------------
+    out.push(String.fromCharCode(ch));
+    if (!space) atLineStart = false;
+    col++;
     i++;
   }
 
@@ -169,53 +206,52 @@ function unbreakscapeBuf(
   fmt: TextFormatType,
   loc: TextLocationType
 ): string {
-  const out: string[] = [];
+  const bitmarkText = isBitmarkText(fmt);
+  const isTag = loc === TextLocation.tag;
+  const isPlainBody = loc === TextLocation.body && !bitmarkText;
+
   const len = src.length;
+  const out = new Array<string>(len); // upper bound
+  let outPos = 0;
+  let bol = true; // beginning-of-line flag
 
   for (let i = 0; i < len; ) {
-    const ch: string = src[i] ?? '';
+    const ch = src[i] as string;
 
-    // 1) HATS – remove exactly one ^ from every run (bitmark or inside tag)
-    if ((isBitmark(fmt) || loc === TextLocation.tag) && ch === '^') {
+    // 1) HATS  – remove exactly one ^ from each run
+    if ((bitmarkText || isTag) && ch === '^') {
       let j = i + 1;
       while (j < len && src[j] === '^') j++;
-      const cnt = j - i;
-      if (cnt > 1) out.push('^'.repeat(cnt - 1));
+      if (j - i > 1) out[outPos++] = src.slice(i + 1, j); // keep the rest
       i = j;
       continue;
     }
 
-    // 2) PLAIN‑body  “[^.” → “[.”   (requires zero‑indent)
+    // 2) PLAIN-body “[ ^ .”  with zero indent
     if (
-      loc === TextLocation.body &&
-      !isBitmark(fmt) &&
+      isPlainBody &&
+      bol &&
       ch === '[' &&
       src[i + 1] === '^' &&
       src[i + 2] === '.'
     ) {
-      // Look backwards for line start to ensure zero indent
-      let k = out.length - 1;
-      let atBol = true;
-      while (k >= 0 && out[k] !== '\n') {
-        if (out[k] !== ' ' && out[k] !== '\t') {
-          atBol = false;
-          break;
-        }
-        k--;
-      }
-      if (atBol) {
-        out.push('[', '.');
-        i += 3;
-        continue;
-      }
+      out[outPos++] = '[';
+      out[outPos++] = '.';
+      i += 3;
+      bol = false; // we just wrote non-ws on this line
+      continue;
     }
 
-    // DEFAULT copy ----------------------------------------------------------
-    out.push(ch);
+    // 3) default copy
+    out[outPos++] = ch;
     i++;
+
+    // keep bol up to date
+    if (ch === '\n') bol = true;
+    else if (bol && ch !== ' ' && ch !== '\t') bol = false;
   }
 
-  return out.join('');
+  return out.slice(0, outPos).join('');
 }
 
 // -----------------------------------------------------------------------------
@@ -227,7 +263,67 @@ function isString(x: unknown): x is string {
   return typeof x === 'string' || x instanceof String;
 }
 
+/**
+ * Main class for performing breakscape and unbreakscape operations on bitmark text.
+ *
+ * Breakscaping is the process of escaping special characters in bitmark text to prevent
+ * them from being interpreted as markup. This includes adding caret (^) characters before
+ * special characters that would otherwise be interpreted as bitmark syntax.
+ *
+ * @example
+ * ```typescript
+ * const breakscape = new Breakscape();
+ *
+ * // Breakscape a string
+ * const escaped = breakscape.breakscape('[.hello]');
+ *
+ * // Unbreakscape a string
+ * const unescaped = breakscape.unbreakscape('[^.hello]');
+ *
+ * // Process arrays
+ * const escapedArray = breakscape.breakscape(['[.hello]', '[.world]']);
+ * ```
+ *
+ * @public
+ */
 class Breakscape {
+  /**
+   * Escapes special characters in bitmark text by adding caret (^) characters.
+   *
+   * This method processes text to prevent special characters from being interpreted
+   * as bitmark markup. It handles various scenarios including:
+   * - Tag triggers after '[' characters
+   * - Paired punctuation marks
+   * - Hat characters (^)
+   * - End-of-tag brackets
+   * - Beginning-of-line markers
+   *
+   * IMPORTANT: Breakscaping differs depending on the bit text format, and if the text will
+   * be used in a tag or in the body of a bitmark. The default is bitmark++ in the body.
+   * If the text is to be used in a tag, or is not bitmark++, you must specify the textFormat
+   * and textLocation options.
+   *
+   * @param val - The input to breakscape. Can be a string, array of strings, null, or undefined.
+   * @param opts - Optional configuration for the breakscape operation.
+   * @returns The breakscaped result with the same type as the input.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   *
+   * // Single string
+   * breakscape.breakscape('[.hello]'); // Returns '[^.hello]'
+   *
+   * // Array of strings
+   * breakscape.breakscape(['[.hello]', '[.world]']); // Returns ['[^.hello]', '[^.world]']
+   *
+   * // With options
+   * breakscape.breakscape('[.hello]', {
+   *   textFormat: TextFormat.bitmark++,
+   *   textLocation: TextLocation.body
+   * });
+   * ```
+   */
   breakscape(val: string, opts?: BreakscapeOptions): string;
   breakscape(val: string[], opts?: BreakscapeOptions): string[];
   breakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
@@ -235,11 +331,11 @@ class Breakscape {
     val: string | string[] | undefined | null,
     opts: BreakscapeOptions = {}
   ): string | string[] | undefined {
-    const { textFormat: fmt, textLocation: loc } = { ...DEF, ...opts };
+    const { format: fmt, location: loc } = { ...DEF, ...opts };
     if (val == null) return undefined;
     const proc = (s: string) => breakscapeBuf(s, fmt, loc);
     if (Array.isArray(val)) {
-      const a = opts.modifyArray ? val : [...val];
+      const a = opts.inPlaceArray ? val : [...val];
       for (let i = 0; i < a.length; i++)
         if (isString(a[i])) a[i] = proc(a[i] as string);
       return a;
@@ -247,6 +343,38 @@ class Breakscape {
     return proc(val as string);
   }
 
+  /**
+   * Removes escape characters (carets) from previously breakscaped bitmark text.
+   *
+   * This method reverses the breakscape operation by removing caret (^) characters
+   * that were added to escape special bitmark syntax.
+   *
+   * IMPORTANT: Unbreakscaping differs depending on the bit text format, and if the text will
+   * be used in a tag or in the body of a bitmark. The default is bitmark++ in the body.
+   * If the text is to be used in a tag, or is not bitmark++, you must specify the textFormat
+   * and textLocation options.
+   *
+   * @param val - The input to unbreakscape. Can be a string, array of strings, null, or undefined.
+   * @param opts - Optional configuration for the unbreakscape operation.
+   * @returns The unbreakscaped result with the same type as the input.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   *
+   * // Single string
+   * breakscape.unbreakscape('[^.hello]'); // Returns '[.hello]'
+   *
+   * // Array of strings
+   * breakscape.unbreakscape(['[^.hello]', '[^.world]']); // Returns ['[.hello]', '[.world]']
+   *
+   * // With options
+   * breakscape.unbreakscape('[^.hello]', {
+   *   textFormat: TextFormat.bitmarkPlusPlus,
+   *   textLocation: TextLocation.body
+   * });
+   * ```
+   */
   unbreakscape(val: string, opts?: BreakscapeOptions): string;
   unbreakscape(val: string[], opts?: BreakscapeOptions): string[];
   unbreakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
@@ -254,17 +382,47 @@ class Breakscape {
     val: string | string[] | undefined | null,
     opts: BreakscapeOptions = {}
   ): string | string[] | undefined {
-    const { textFormat: fmt, textLocation: loc } = { ...DEF, ...opts };
+    const { format: fmt, location: loc } = { ...DEF, ...opts };
     if (val == null) return undefined;
     const proc = (s: string) => unbreakscapeBuf(s, fmt, loc);
     if (Array.isArray(val)) {
-      const a = opts.modifyArray ? val : [...val];
+      const a = opts.inPlaceArray ? val : [...val];
       for (let i = 0; i < a.length; i++)
         if (isString(a[i])) a[i] = proc(a[i] as string);
       return a;
     }
     return proc(val as string);
   }
+
+  /**
+   * Gets the version of the breakscape library.
+   *
+   * @returns The current version string of the library.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   * console.log(breakscape.version()); // e.g., "1.0.0"
+   * ```
+   */
+  version(): string {
+    return buildInfo.version;
+  }
+
+  /**
+   * Gets the license information for the breakscape library.
+   *
+   * @returns The license string for the library.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   * console.log(breakscape.license()); // e.g., "MIT"
+   * ```
+   */
+  license(): string {
+    return buildInfo.license;
+  }
 }
 
-export { Breakscape, breakscapeBuf, unbreakscapeBuf };
+export { Breakscape };

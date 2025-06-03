@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "npm run gen-version && npm run typecheck && tsup",
     "dev": "tsup --watch",
     "test": "vitest",
     "test:ci": "vitest run",
@@ -30,7 +30,8 @@
     "format:check": "prettier --check 'src/**/*.{ts,tsx}' '*.{json,md}'",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && npm run test:ci && npm run lint",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "gen-version": "node scripts/gen-version.js"
   },
   "keywords": [
     "bitmark",

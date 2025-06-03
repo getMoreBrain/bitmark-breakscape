@@ -4,17 +4,21 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { Breakscape } from '../lib/breakscape.ts'; // adjust if needed
-import { TextFormat, TextFormatType } from '../lib/model/TextFormat.ts'; // adjust if needed
-import { TextLocation, TextLocationType } from '../lib/model/TextLocation.ts'; // adjust if needed
+import {
+  Breakscape,
+  TextFormat,
+  TextLocation,
+  TextFormatType,
+  TextLocationType,
+} from '../lib/'; // adjust if needed
 
 type Case = {
   from: string;
   to: {
-    bitmarkText_body: string;
-    bitmarkText_tag: string;
-    plainText_body: string;
-    plainText_tag: string;
+    bitmarkPlusPlus_body: string;
+    bitmarkPlusPlus_tag: string;
+    text_body: string;
+    text_tag: string;
   };
 };
 
@@ -26,55 +30,55 @@ const CASES: Case[] = [
   {
     from: '^',
     to: {
-      bitmarkText_body: '^^',
-      bitmarkText_tag: '^^',
-      plainText_body: '^',
-      plainText_tag: '^^',
+      bitmarkPlusPlus_body: '^^',
+      bitmarkPlusPlus_tag: '^^',
+      text_body: '^',
+      text_tag: '^^',
     },
   },
   {
     from: '^^',
     to: {
-      bitmarkText_body: '^^^',
-      bitmarkText_tag: '^^^',
-      plainText_body: '^^',
-      plainText_tag: '^^^',
+      bitmarkPlusPlus_body: '^^^',
+      bitmarkPlusPlus_tag: '^^^',
+      text_body: '^^',
+      text_tag: '^^^',
     },
   },
   {
     from: '^^^^',
     to: {
-      bitmarkText_body: '^^^^^',
-      bitmarkText_tag: '^^^^^',
-      plainText_body: '^^^^',
-      plainText_tag: '^^^^^',
+      bitmarkPlusPlus_body: '^^^^^',
+      bitmarkPlusPlus_tag: '^^^^^',
+      text_body: '^^^^',
+      text_tag: '^^^^^',
     },
   },
   {
     from: '*^*^*',
     to: {
-      bitmarkText_body: '*^^*^^*',
-      bitmarkText_tag: '*^^*^^*',
-      plainText_body: '*^*^*',
-      plainText_tag: '*^^*^^*',
+      bitmarkPlusPlus_body: '*^^*^^*',
+      bitmarkPlusPlus_tag: '*^^*^^*',
+      text_body: '*^*^*',
+      text_tag: '*^^*^^*',
     },
   },
   {
     from: '|^|^|',
     to: {
-      bitmarkText_body: '|^^|^^|',
-      bitmarkText_tag: '|^^|^^|',
-      plainText_body: '|^|^|',
-      plainText_tag: '|^^|^^|',
+      bitmarkPlusPlus_body: '|^^|^^|',
+      bitmarkPlusPlus_tag: '|^^|^^|',
+      text_body: '|^|^|',
+      text_tag: '|^^|^^|',
     },
   },
   {
     from: '_^_^_',
     to: {
-      bitmarkText_body: '_^^_^^_',
-      bitmarkText_tag: '_^^_^^_',
-      plainText_body: '_^_^_',
-      plainText_tag: '_^^_^^_',
+      bitmarkPlusPlus_body: '_^^_^^_',
+      bitmarkPlusPlus_tag: '_^^_^^_',
+      text_body: '_^_^_',
+      text_tag: '_^^_^^_',
     },
   },
 
@@ -82,181 +86,181 @@ const CASES: Case[] = [
   {
     from: '==',
     to: {
-      bitmarkText_body: '=^=',
-      bitmarkText_tag: '=^=',
-      plainText_body: '==',
-      plainText_tag: '==',
+      bitmarkPlusPlus_body: '=^=',
+      bitmarkPlusPlus_tag: '=^=',
+      text_body: '==',
+      text_tag: '==',
     },
   },
   {
     from: 'before==after',
     to: {
-      bitmarkText_body: 'before=^=after',
-      bitmarkText_tag: 'before=^=after',
-      plainText_body: 'before==after',
-      plainText_tag: 'before==after',
+      bitmarkPlusPlus_body: 'before=^=after',
+      bitmarkPlusPlus_tag: 'before=^=after',
+      text_body: 'before==after',
+      text_tag: 'before==after',
     },
   },
   {
     from: '===',
     to: {
-      bitmarkText_body: '=^=^=',
-      bitmarkText_tag: '=^=^=',
-      plainText_body: '===',
-      plainText_tag: '===',
+      bitmarkPlusPlus_body: '=^=^=',
+      bitmarkPlusPlus_tag: '=^=^=',
+      text_body: '===',
+      text_tag: '===',
     },
   },
   {
     from: '====',
     to: {
-      bitmarkText_body: '=^=^=^=',
-      bitmarkText_tag: '=^=^=^=',
-      plainText_body: '====',
-      plainText_tag: '====',
+      bitmarkPlusPlus_body: '=^=^=^=',
+      bitmarkPlusPlus_tag: '=^=^=^=',
+      text_body: '====',
+      text_tag: '====',
     },
   },
   {
     from: '**',
     to: {
-      bitmarkText_body: '*^*',
-      bitmarkText_tag: '*^*',
-      plainText_body: '**',
-      plainText_tag: '**',
+      bitmarkPlusPlus_body: '*^*',
+      bitmarkPlusPlus_tag: '*^*',
+      text_body: '**',
+      text_tag: '**',
     },
   },
   {
     from: '***',
     to: {
-      bitmarkText_body: '*^*^*',
-      bitmarkText_tag: '*^*^*',
-      plainText_body: '***',
-      plainText_tag: '***',
+      bitmarkPlusPlus_body: '*^*^*',
+      bitmarkPlusPlus_tag: '*^*^*',
+      text_body: '***',
+      text_tag: '***',
     },
   },
   {
     from: '****',
     to: {
-      bitmarkText_body: '*^*^*^*',
-      bitmarkText_tag: '*^*^*^*',
-      plainText_body: '****',
-      plainText_tag: '****',
+      bitmarkPlusPlus_body: '*^*^*^*',
+      bitmarkPlusPlus_tag: '*^*^*^*',
+      text_body: '****',
+      text_tag: '****',
     },
   },
   {
     from: 'before**after',
     to: {
-      bitmarkText_body: 'before*^*after',
-      bitmarkText_tag: 'before*^*after',
-      plainText_body: 'before**after',
-      plainText_tag: 'before**after',
+      bitmarkPlusPlus_body: 'before*^*after',
+      bitmarkPlusPlus_tag: 'before*^*after',
+      text_body: 'before**after',
+      text_tag: 'before**after',
     },
   },
   {
     from: '``',
     to: {
-      bitmarkText_body: '`^`',
-      bitmarkText_tag: '`^`',
-      plainText_body: '``',
-      plainText_tag: '``',
+      bitmarkPlusPlus_body: '`^`',
+      bitmarkPlusPlus_tag: '`^`',
+      text_body: '``',
+      text_tag: '``',
     },
   },
   {
     from: '```',
     to: {
-      bitmarkText_body: '`^`^`',
-      bitmarkText_tag: '`^`^`',
-      plainText_body: '```',
-      plainText_tag: '```',
+      bitmarkPlusPlus_body: '`^`^`',
+      bitmarkPlusPlus_tag: '`^`^`',
+      text_body: '```',
+      text_tag: '```',
     },
   },
   {
     from: '````',
     to: {
-      bitmarkText_body: '`^`^`^`',
-      bitmarkText_tag: '`^`^`^`',
-      plainText_body: '````',
-      plainText_tag: '````',
+      bitmarkPlusPlus_body: '`^`^`^`',
+      bitmarkPlusPlus_tag: '`^`^`^`',
+      text_body: '````',
+      text_tag: '````',
     },
   },
   {
     from: 'before``after',
     to: {
-      bitmarkText_body: 'before`^`after',
-      bitmarkText_tag: 'before`^`after',
-      plainText_body: 'before``after',
-      plainText_tag: 'before``after',
+      bitmarkPlusPlus_body: 'before`^`after',
+      bitmarkPlusPlus_tag: 'before`^`after',
+      text_body: 'before``after',
+      text_tag: 'before``after',
     },
   },
   {
     from: '__',
     to: {
-      bitmarkText_body: '_^_',
-      bitmarkText_tag: '_^_',
-      plainText_body: '__',
-      plainText_tag: '__',
+      bitmarkPlusPlus_body: '_^_',
+      bitmarkPlusPlus_tag: '_^_',
+      text_body: '__',
+      text_tag: '__',
     },
   },
   {
     from: '___',
     to: {
-      bitmarkText_body: '_^_^_',
-      bitmarkText_tag: '_^_^_',
-      plainText_body: '___',
-      plainText_tag: '___',
+      bitmarkPlusPlus_body: '_^_^_',
+      bitmarkPlusPlus_tag: '_^_^_',
+      text_body: '___',
+      text_tag: '___',
     },
   },
   {
     from: '____',
     to: {
-      bitmarkText_body: '_^_^_^_',
-      bitmarkText_tag: '_^_^_^_',
-      plainText_body: '____',
-      plainText_tag: '____',
+      bitmarkPlusPlus_body: '_^_^_^_',
+      bitmarkPlusPlus_tag: '_^_^_^_',
+      text_body: '____',
+      text_tag: '____',
     },
   },
   {
     from: 'before__after',
     to: {
-      bitmarkText_body: 'before_^_after',
-      bitmarkText_tag: 'before_^_after',
-      plainText_body: 'before__after',
-      plainText_tag: 'before__after',
+      bitmarkPlusPlus_body: 'before_^_after',
+      bitmarkPlusPlus_tag: 'before_^_after',
+      text_body: 'before__after',
+      text_tag: 'before__after',
     },
   },
   {
     from: '!!',
     to: {
-      bitmarkText_body: '!^!',
-      bitmarkText_tag: '!^!',
-      plainText_body: '!!',
-      plainText_tag: '!!',
+      bitmarkPlusPlus_body: '!^!',
+      bitmarkPlusPlus_tag: '!^!',
+      text_body: '!!',
+      text_tag: '!!',
     },
   },
   {
     from: '!!!',
     to: {
-      bitmarkText_body: '!^!^!',
-      bitmarkText_tag: '!^!^!',
-      plainText_body: '!!!',
-      plainText_tag: '!!!',
+      bitmarkPlusPlus_body: '!^!^!',
+      bitmarkPlusPlus_tag: '!^!^!',
+      text_body: '!!!',
+      text_tag: '!!!',
     },
   },
   {
     from: '!!!!',
     to: {
-      bitmarkText_body: '!^!^!^!',
-      bitmarkText_tag: '!^!^!^!',
-      plainText_body: '!!!!',
-      plainText_tag: '!!!!',
+      bitmarkPlusPlus_body: '!^!^!^!',
+      bitmarkPlusPlus_tag: '!^!^!^!',
+      text_body: '!!!!',
+      text_tag: '!!!!',
     },
   },
   {
     from: 'before!!after',
     to: {
-      bitmarkText_body: 'before!^!after',
-      bitmarkText_tag: 'before!^!after',
-      plainText_body: 'before!!after',
-      plainText_tag: 'before!!after',
+      bitmarkPlusPlus_body: 'before!^!after',
+      bitmarkPlusPlus_tag: 'before!^!after',
+      text_body: 'before!!after',
+      text_tag: 'before!!after',
     },
   },
 
@@ -264,109 +268,109 @@ const CASES: Case[] = [
   {
     from: '### ',
     to: {
-      bitmarkText_body: '###^ ',
-      bitmarkText_tag: '### ',
-      plainText_body: '### ',
-      plainText_tag: '### ',
+      bitmarkPlusPlus_body: '###^ ',
+      bitmarkPlusPlus_tag: '### ',
+      text_body: '### ',
+      text_tag: '### ',
     },
   },
   {
     from: '|',
     to: {
-      bitmarkText_body: '|^',
-      bitmarkText_tag: '|',
-      plainText_body: '|',
-      plainText_tag: '|',
+      bitmarkPlusPlus_body: '|^',
+      bitmarkPlusPlus_tag: '|',
+      text_body: '|',
+      text_tag: '|',
     },
   },
   {
     from: '|code',
     to: {
-      bitmarkText_body: '|^code',
-      bitmarkText_tag: '|code',
-      plainText_body: '|code',
-      plainText_tag: '|code',
+      bitmarkPlusPlus_body: '|^code',
+      bitmarkPlusPlus_tag: '|code',
+      text_body: '|code',
+      text_tag: '|code',
     },
   },
   {
     from: '|image:http',
     to: {
-      bitmarkText_body: '|^image:http',
-      bitmarkText_tag: '|image:http',
-      plainText_body: '|image:http',
-      plainText_tag: '|image:http',
+      bitmarkPlusPlus_body: '|^image:http',
+      bitmarkPlusPlus_tag: '|image:http',
+      text_body: '|image:http',
+      text_tag: '|image:http',
     },
   },
   {
     from: '• ',
     to: {
-      bitmarkText_body: '•^ ',
-      bitmarkText_tag: '• ',
-      plainText_body: '• ',
-      plainText_tag: '• ',
+      bitmarkPlusPlus_body: '•^ ',
+      bitmarkPlusPlus_tag: '• ',
+      text_body: '• ',
+      text_tag: '• ',
     },
   },
   {
     from: '•_ ',
     to: {
-      bitmarkText_body: '•^_ ',
-      bitmarkText_tag: '•_ ',
-      plainText_body: '•_ ',
-      plainText_tag: '•_ ',
+      bitmarkPlusPlus_body: '•^_ ',
+      bitmarkPlusPlus_tag: '•_ ',
+      text_body: '•_ ',
+      text_tag: '•_ ',
     },
   },
   {
     from: '•12 ',
     to: {
-      bitmarkText_body: '•^12 ',
-      bitmarkText_tag: '•12 ',
-      plainText_body: '•12 ',
-      plainText_tag: '•12 ',
+      bitmarkPlusPlus_body: '•^12 ',
+      bitmarkPlusPlus_tag: '•12 ',
+      text_body: '•12 ',
+      text_tag: '•12 ',
     },
   },
   {
     from: '•12i ',
     to: {
-      bitmarkText_body: '•^12i ',
-      bitmarkText_tag: '•12i ',
-      plainText_body: '•12i ',
-      plainText_tag: '•12i ',
+      bitmarkPlusPlus_body: '•^12i ',
+      bitmarkPlusPlus_tag: '•12i ',
+      text_body: '•12i ',
+      text_tag: '•12i ',
     },
   },
   {
     from: '•12I ',
     to: {
-      bitmarkText_body: '•^12I ',
-      bitmarkText_tag: '•12I ',
-      plainText_body: '•12I ',
-      plainText_tag: '•12I ',
+      bitmarkPlusPlus_body: '•^12I ',
+      bitmarkPlusPlus_tag: '•12I ',
+      text_body: '•12I ',
+      text_tag: '•12I ',
     },
   },
   {
     from: '•a ',
     to: {
-      bitmarkText_body: '•^a ',
-      bitmarkText_tag: '•a ',
-      plainText_body: '•a ',
-      plainText_tag: '•a ',
+      bitmarkPlusPlus_body: '•^a ',
+      bitmarkPlusPlus_tag: '•a ',
+      text_body: '•a ',
+      text_tag: '•a ',
     },
   },
   {
     from: '•+ ',
     to: {
-      bitmarkText_body: '•^+ ',
-      bitmarkText_tag: '•+ ',
-      plainText_body: '•+ ',
-      plainText_tag: '•+ ',
+      bitmarkPlusPlus_body: '•^+ ',
+      bitmarkPlusPlus_tag: '•+ ',
+      text_body: '•+ ',
+      text_tag: '•+ ',
     },
   },
   {
     from: '•- ',
     to: {
-      bitmarkText_body: '•^- ',
-      bitmarkText_tag: '•- ',
-      plainText_body: '•- ',
-      plainText_tag: '•- ',
+      bitmarkPlusPlus_body: '•^- ',
+      bitmarkPlusPlus_tag: '•- ',
+      text_body: '•- ',
+      text_tag: '•- ',
     },
   },
 
@@ -374,73 +378,73 @@ const CASES: Case[] = [
   {
     from: ' • ',
     to: {
-      bitmarkText_body: ' • ',
-      bitmarkText_tag: ' • ',
-      plainText_body: ' • ',
-      plainText_tag: ' • ',
+      bitmarkPlusPlus_body: ' • ',
+      bitmarkPlusPlus_tag: ' • ',
+      text_body: ' • ',
+      text_tag: ' • ',
     },
   },
   {
     from: ' •_ ',
     to: {
-      bitmarkText_body: ' •_ ',
-      bitmarkText_tag: ' •_ ',
-      plainText_body: ' •_ ',
-      plainText_tag: ' •_ ',
+      bitmarkPlusPlus_body: ' •_ ',
+      bitmarkPlusPlus_tag: ' •_ ',
+      text_body: ' •_ ',
+      text_tag: ' •_ ',
     },
   },
   {
     from: ' •12 ',
     to: {
-      bitmarkText_body: ' •12 ',
-      bitmarkText_tag: ' •12 ',
-      plainText_body: ' •12 ',
-      plainText_tag: ' •12 ',
+      bitmarkPlusPlus_body: ' •12 ',
+      bitmarkPlusPlus_tag: ' •12 ',
+      text_body: ' •12 ',
+      text_tag: ' •12 ',
     },
   },
   {
     from: ' •12i ',
     to: {
-      bitmarkText_body: ' •12i ',
-      bitmarkText_tag: ' •12i ',
-      plainText_body: ' •12i ',
-      plainText_tag: ' •12i ',
+      bitmarkPlusPlus_body: ' •12i ',
+      bitmarkPlusPlus_tag: ' •12i ',
+      text_body: ' •12i ',
+      text_tag: ' •12i ',
     },
   },
   {
     from: ' •12I ',
     to: {
-      bitmarkText_body: ' •12I ',
-      bitmarkText_tag: ' •12I ',
-      plainText_body: ' •12I ',
-      plainText_tag: ' •12I ',
+      bitmarkPlusPlus_body: ' •12I ',
+      bitmarkPlusPlus_tag: ' •12I ',
+      text_body: ' •12I ',
+      text_tag: ' •12I ',
     },
   },
   {
     from: ' •a ',
     to: {
-      bitmarkText_body: ' •a ',
-      bitmarkText_tag: ' •a ',
-      plainText_body: ' •a ',
-      plainText_tag: ' •a ',
+      bitmarkPlusPlus_body: ' •a ',
+      bitmarkPlusPlus_tag: ' •a ',
+      text_body: ' •a ',
+      text_tag: ' •a ',
     },
   },
   {
     from: ' •+ ',
     to: {
-      bitmarkText_body: ' •+ ',
-      bitmarkText_tag: ' •+ ',
-      plainText_body: ' •+ ',
-      plainText_tag: ' •+ ',
+      bitmarkPlusPlus_body: ' •+ ',
+      bitmarkPlusPlus_tag: ' •+ ',
+      text_body: ' •+ ',
+      text_tag: ' •+ ',
     },
   },
   {
     from: ' •- ',
     to: {
-      bitmarkText_body: ' •- ',
-      bitmarkText_tag: ' •- ',
-      plainText_body: ' •- ',
-      plainText_tag: ' •- ',
+      bitmarkPlusPlus_body: ' •- ',
+      bitmarkPlusPlus_tag: ' •- ',
+      text_body: ' •- ',
+      text_tag: ' •- ',
     },
   },
 
@@ -448,253 +452,253 @@ const CASES: Case[] = [
   {
     from: '[.',
     to: {
-      bitmarkText_body: '[^.',
-      bitmarkText_tag: '[.',
-      plainText_body: '[^.',
-      plainText_tag: '[.',
+      bitmarkPlusPlus_body: '[^.',
+      bitmarkPlusPlus_tag: '[.',
+      text_body: '[^.',
+      text_tag: '[.',
     },
   },
   {
     from: ' [.',
     to: {
-      bitmarkText_body: ' [^.',
-      bitmarkText_tag: ' [.',
-      plainText_body: ' [.',
-      plainText_tag: ' [.',
+      bitmarkPlusPlus_body: ' [^.',
+      bitmarkPlusPlus_tag: ' [.',
+      text_body: ' [.',
+      text_tag: ' [.',
     },
   },
   {
     from: '[@',
     to: {
-      bitmarkText_body: '[^@',
-      bitmarkText_tag: '[@',
-      plainText_body: '[@',
-      plainText_tag: '[@',
+      bitmarkPlusPlus_body: '[^@',
+      bitmarkPlusPlus_tag: '[@',
+      text_body: '[@',
+      text_tag: '[@',
     },
   },
   {
     from: ' [@',
     to: {
-      bitmarkText_body: ' [^@',
-      bitmarkText_tag: ' [@',
-      plainText_body: ' [@',
-      plainText_tag: ' [@',
+      bitmarkPlusPlus_body: ' [^@',
+      bitmarkPlusPlus_tag: ' [@',
+      text_body: ' [@',
+      text_tag: ' [@',
     },
   },
   {
     from: '[#',
     to: {
-      bitmarkText_body: '[^#',
-      bitmarkText_tag: '[#',
-      plainText_body: '[#',
-      plainText_tag: '[#',
+      bitmarkPlusPlus_body: '[^#',
+      bitmarkPlusPlus_tag: '[#',
+      text_body: '[#',
+      text_tag: '[#',
     },
   },
   {
     from: ' [#',
     to: {
-      bitmarkText_body: ' [^#',
-      bitmarkText_tag: ' [#',
-      plainText_body: ' [#',
-      plainText_tag: ' [#',
+      bitmarkPlusPlus_body: ' [^#',
+      bitmarkPlusPlus_tag: ' [#',
+      text_body: ' [#',
+      text_tag: ' [#',
     },
   },
   {
     from: '[▼',
     to: {
-      bitmarkText_body: '[^▼',
-      bitmarkText_tag: '[▼',
-      plainText_body: '[▼',
-      plainText_tag: '[▼',
+      bitmarkPlusPlus_body: '[^▼',
+      bitmarkPlusPlus_tag: '[▼',
+      text_body: '[▼',
+      text_tag: '[▼',
     },
   },
   {
     from: ' [▼',
     to: {
-      bitmarkText_body: ' [^▼',
-      bitmarkText_tag: ' [▼',
-      plainText_body: ' [▼',
-      plainText_tag: ' [▼',
+      bitmarkPlusPlus_body: ' [^▼',
+      bitmarkPlusPlus_tag: ' [▼',
+      text_body: ' [▼',
+      text_tag: ' [▼',
     },
   },
   {
     from: '[►',
     to: {
-      bitmarkText_body: '[^►',
-      bitmarkText_tag: '[►',
-      plainText_body: '[►',
-      plainText_tag: '[►',
+      bitmarkPlusPlus_body: '[^►',
+      bitmarkPlusPlus_tag: '[►',
+      text_body: '[►',
+      text_tag: '[►',
     },
   },
   {
     from: ' [►',
     to: {
-      bitmarkText_body: ' [^►',
-      bitmarkText_tag: ' [►',
-      plainText_body: ' [►',
-      plainText_tag: ' [►',
+      bitmarkPlusPlus_body: ' [^►',
+      bitmarkPlusPlus_tag: ' [►',
+      text_body: ' [►',
+      text_tag: ' [►',
     },
   },
   {
     from: '[%',
     to: {
-      bitmarkText_body: '[^%',
-      bitmarkText_tag: '[%',
-      plainText_body: '[%',
-      plainText_tag: '[%',
+      bitmarkPlusPlus_body: '[^%',
+      bitmarkPlusPlus_tag: '[%',
+      text_body: '[%',
+      text_tag: '[%',
     },
   },
   {
     from: ' [%',
     to: {
-      bitmarkText_body: ' [^%',
-      bitmarkText_tag: ' [%',
-      plainText_body: ' [%',
-      plainText_tag: ' [%',
+      bitmarkPlusPlus_body: ' [^%',
+      bitmarkPlusPlus_tag: ' [%',
+      text_body: ' [%',
+      text_tag: ' [%',
     },
   },
   {
     from: '[!',
     to: {
-      bitmarkText_body: '[^!',
-      bitmarkText_tag: '[!',
-      plainText_body: '[!',
-      plainText_tag: '[!',
+      bitmarkPlusPlus_body: '[^!',
+      bitmarkPlusPlus_tag: '[!',
+      text_body: '[!',
+      text_tag: '[!',
     },
   },
   {
     from: ' [!',
     to: {
-      bitmarkText_body: ' [^!',
-      bitmarkText_tag: ' [!',
-      plainText_body: ' [!',
-      plainText_tag: ' [!',
+      bitmarkPlusPlus_body: ' [^!',
+      bitmarkPlusPlus_tag: ' [!',
+      text_body: ' [!',
+      text_tag: ' [!',
     },
   },
   {
     from: '[?',
     to: {
-      bitmarkText_body: '[^?',
-      bitmarkText_tag: '[?',
-      plainText_body: '[?',
-      plainText_tag: '[?',
+      bitmarkPlusPlus_body: '[^?',
+      bitmarkPlusPlus_tag: '[?',
+      text_body: '[?',
+      text_tag: '[?',
     },
   },
   {
     from: ' [?',
     to: {
-      bitmarkText_body: ' [^?',
-      bitmarkText_tag: ' [?',
-      plainText_body: ' [?',
-      plainText_tag: ' [?',
+      bitmarkPlusPlus_body: ' [^?',
+      bitmarkPlusPlus_tag: ' [?',
+      text_body: ' [?',
+      text_tag: ' [?',
     },
   },
   {
     from: '[+',
     to: {
-      bitmarkText_body: '[^+',
-      bitmarkText_tag: '[+',
-      plainText_body: '[+',
-      plainText_tag: '[+',
+      bitmarkPlusPlus_body: '[^+',
+      bitmarkPlusPlus_tag: '[+',
+      text_body: '[+',
+      text_tag: '[+',
     },
   },
   {
     from: ' [+',
     to: {
-      bitmarkText_body: ' [^+',
-      bitmarkText_tag: ' [+',
-      plainText_body: ' [+',
-      plainText_tag: ' [+',
+      bitmarkPlusPlus_body: ' [^+',
+      bitmarkPlusPlus_tag: ' [+',
+      text_body: ' [+',
+      text_tag: ' [+',
     },
   },
   {
     from: ' [-',
     to: {
-      bitmarkText_body: ' [^-',
-      bitmarkText_tag: ' [-',
-      plainText_body: ' [-',
-      plainText_tag: ' [-',
+      bitmarkPlusPlus_body: ' [^-',
+      bitmarkPlusPlus_tag: ' [-',
+      text_body: ' [-',
+      text_tag: ' [-',
     },
   },
   {
     from: ' [-',
     to: {
-      bitmarkText_body: ' [^-',
-      bitmarkText_tag: ' [-',
-      plainText_body: ' [-',
-      plainText_tag: ' [-',
+      bitmarkPlusPlus_body: ' [^-',
+      bitmarkPlusPlus_tag: ' [-',
+      text_body: ' [-',
+      text_tag: ' [-',
     },
   },
   {
     from: '[$',
     to: {
-      bitmarkText_body: '[^$',
-      bitmarkText_tag: '[$',
-      plainText_body: '[$',
-      plainText_tag: '[$',
+      bitmarkPlusPlus_body: '[^$',
+      bitmarkPlusPlus_tag: '[$',
+      text_body: '[$',
+      text_tag: '[$',
     },
   },
   {
     from: ' [$',
     to: {
-      bitmarkText_body: ' [^$',
-      bitmarkText_tag: ' [$',
-      plainText_body: ' [$',
-      plainText_tag: ' [$',
+      bitmarkPlusPlus_body: ' [^$',
+      bitmarkPlusPlus_tag: ' [$',
+      text_body: ' [$',
+      text_tag: ' [$',
     },
   },
   {
     from: '[_',
     to: {
-      bitmarkText_body: '[^_',
-      bitmarkText_tag: '[_',
-      plainText_body: '[_',
-      plainText_tag: '[_',
+      bitmarkPlusPlus_body: '[^_',
+      bitmarkPlusPlus_tag: '[_',
+      text_body: '[_',
+      text_tag: '[_',
     },
   },
   {
     from: ' [_',
     to: {
-      bitmarkText_body: ' [^_',
-      bitmarkText_tag: ' [_',
-      plainText_body: ' [_',
-      plainText_tag: ' [_',
+      bitmarkPlusPlus_body: ' [^_',
+      bitmarkPlusPlus_tag: ' [_',
+      text_body: ' [_',
+      text_tag: ' [_',
     },
   },
   {
     from: '[=',
     to: {
-      bitmarkText_body: '[^=',
-      bitmarkText_tag: '[=',
-      plainText_body: '[=',
-      plainText_tag: '[=',
+      bitmarkPlusPlus_body: '[^=',
+      bitmarkPlusPlus_tag: '[=',
+      text_body: '[=',
+      text_tag: '[=',
     },
   },
   {
     from: ' [=',
     to: {
-      bitmarkText_body: ' [^=',
-      bitmarkText_tag: ' [=',
-      plainText_body: ' [=',
-      plainText_tag: ' [=',
+      bitmarkPlusPlus_body: ' [^=',
+      bitmarkPlusPlus_tag: ' [=',
+      text_body: ' [=',
+      text_tag: ' [=',
     },
   },
   {
     from: '[&',
     to: {
-      bitmarkText_body: '[^&',
-      bitmarkText_tag: '[&',
-      plainText_body: '[&',
-      plainText_tag: '[&',
+      bitmarkPlusPlus_body: '[^&',
+      bitmarkPlusPlus_tag: '[&',
+      text_body: '[&',
+      text_tag: '[&',
     },
   },
   {
     from: ' [&',
     to: {
-      bitmarkText_body: ' [^&',
-      bitmarkText_tag: ' [&',
-      plainText_body: ' [&',
-      plainText_tag: ' [&',
+      bitmarkPlusPlus_body: ' [^&',
+      bitmarkPlusPlus_tag: ' [&',
+      text_body: ' [&',
+      text_tag: ' [&',
     },
   },
 
@@ -702,19 +706,19 @@ const CASES: Case[] = [
   {
     from: ']',
     to: {
-      bitmarkText_body: ']',
-      bitmarkText_tag: '^]',
-      plainText_body: ']',
-      plainText_tag: '^]',
+      bitmarkPlusPlus_body: ']',
+      bitmarkPlusPlus_tag: '^]',
+      text_body: ']',
+      text_tag: '^]',
     },
   },
   {
     from: ' ]',
     to: {
-      bitmarkText_body: ' ]',
-      bitmarkText_tag: ' ^]',
-      plainText_body: ' ]',
-      plainText_tag: ' ^]',
+      bitmarkPlusPlus_body: ' ]',
+      bitmarkPlusPlus_tag: ' ^]',
+      text_body: ' ]',
+      text_tag: ' ^]',
     },
   },
 
@@ -722,19 +726,19 @@ const CASES: Case[] = [
   {
     from: ':5__5:32]**fg^[.article]e!!--``test]^',
     to: {
-      bitmarkText_body: ':5_^_5:32]*^*fg^^[^.article]e!^!--`^`test]^^',
-      bitmarkText_tag: ':5_^_5:32^]*^*fg^^[.article^]e!^!--`^`test^]^^',
-      plainText_body: ':5__5:32]**fg^[.article]e!!--``test]^',
-      plainText_tag: ':5__5:32^]**fg^^[.article^]e!!--``test^]^^',
+      bitmarkPlusPlus_body: ':5_^_5:32]*^*fg^^[^.article]e!^!--`^`test]^^',
+      bitmarkPlusPlus_tag: ':5_^_5:32^]*^*fg^^[.article^]e!^!--`^`test^]^^',
+      text_body: ':5__5:32]**fg^[.article]e!!--``test]^',
+      text_tag: ':5__5:32^]**fg^^[.article^]e!!--``test^]^^',
     },
   },
   {
     from: '^]^[.article]^^]^',
     to: {
-      bitmarkText_body: '^^]^^[^.article]^^^]^^',
-      bitmarkText_tag: '^^]^^[.article^]^^^]^^',
-      plainText_body: '^]^[.article]^^]^',
-      plainText_tag: '^^]^^[.article^]^^^]^^',
+      bitmarkPlusPlus_body: '^^]^^[^.article]^^^]^^',
+      bitmarkPlusPlus_tag: '^^]^^[.article^]^^^]^^',
+      text_body: '^]^[.article]^^]^',
+      text_tag: '^^]^^[.article^]^^^]^^',
     },
   },
 ];
@@ -746,10 +750,10 @@ describe(`Breakscape`, () => {
   const bs = new Breakscape();
 
   const types: string[] = [
-    'bitmarkText_body',
-    'bitmarkText_tag',
-    'plainText_body',
-    'plainText_tag',
+    'bitmarkPlusPlus_body',
+    'bitmarkPlusPlus_tag',
+    'text_body',
+    'text_tag',
   ];
 
   types.forEach((type: string) => {
@@ -765,15 +769,15 @@ describe(`Breakscape`, () => {
 
         it(`${from} → breakscape → ${to}`, () => {
           const res = bs.breakscape(from, {
-            textFormat,
-            textLocation,
+            format: textFormat,
+            location: textLocation,
           });
           expect(res).toBe(to);
         });
         it(`${to} → unbreakscape → ${from}`, () => {
           const res = bs.unbreakscape(to, {
-            textFormat,
-            textLocation,
+            format: textFormat,
+            location: textLocation,
           });
           expect(res).toBe(from);
         });
@@ -782,25 +786,46 @@ describe(`Breakscape`, () => {
   });
 
   // Array tests
-  // const textFormat = TextFormat.bitmarkText;
-  // const textLocation = TextLocation.body;
-  // const from = ['^'];
-  // const to = ['^^'];
+  let textFormat: TextFormatType = TextFormat.bitmarkPlusPlus;
+  let textLocation: TextLocationType = TextLocation.body;
+  const from = ['^'];
+  const to = ['^^'];
 
-  // describe(`[${textFormat}, ${textLocation}] (array)`, () => {
-  //   it(`[${textFormat}, ${textLocation}] ${from} → breakscape → ${to}`, () => {
-  //     const res = bs.breakscape(from, {
-  //       textFormat,
-  //       textLocation,
-  //     });
-  //     expect(res).toBe(to);
-  //   });
-  //   it(`${to} → unbreakscape → ${from}`, () => {
-  //     const res = bs.unbreakscape(to, {
-  //       textFormat,
-  //       textLocation,
-  //     });
-  //     expect(res).toBe(from);
-  //   });
-  // });
+  describe(`[${textFormat}, ${textLocation}] (array)`, () => {
+    it(`${from} → breakscape → ${to}`, () => {
+      const res = bs.breakscape(from, {
+        format: textFormat,
+        location: textLocation,
+      });
+      expect(res).toEqual(to);
+    });
+    it(`${to} → unbreakscape → ${from}`, () => {
+      const res = bs.unbreakscape(to, {
+        format: textFormat,
+        location: textLocation,
+      });
+      expect(res).toEqual(from);
+    });
+  });
+
+  // Other type tests
+  textFormat = 'notBitmark++' as TextFormatType;
+  textLocation = TextLocation.tag;
+
+  describe(`[notBitmark++, ${textLocation}] (array)`, () => {
+    it(`${from} → breakscape → ${to}`, () => {
+      const res = bs.breakscape(from, {
+        format: textFormat,
+        location: textLocation,
+      });
+      expect(res).toEqual(to);
+    });
+    it(`${to} → unbreakscape → ${from}`, () => {
+      const res = bs.unbreakscape(to, {
+        format: textFormat,
+        location: textLocation,
+      });
+      expect(res).toEqual(from);
+    });
+  });
 });

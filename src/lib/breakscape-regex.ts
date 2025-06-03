@@ -87,12 +87,12 @@ export interface BreakscapeOptions {
   /**
    * The format of the text being breakscaped, defaults to TextFormat.bitmarkText
    */
-  textFormat: TextFormatType;
+  format: TextFormatType;
 
   /**
    * The location of the text being breakscaped, defaults to TextLocation.body
    */
-  textLocation: TextLocationType;
+  location: TextLocationType;
 
   /**
    * if true, the original array will be modified rather than a copy being made
@@ -106,8 +106,8 @@ export interface BreakscapeOptions {
 }
 
 const DEF = {
-  textFormat: TextFormat.bitmarkText,
-  textLocation: TextLocation.body,
+  format: TextFormat.bitmarkPlusPlus,
+  location: TextLocation.body,
 } as const;
 
 /**
@@ -152,8 +152,8 @@ class Breakscape {
 
     // Select the correct regex and replacer for the text format and location
     const { regex, replacer } = this.selectBreakscapeRegexAndReplacer(
-      opts.textFormat,
-      opts.textLocation,
+      opts.format,
+      opts.location,
       opts.v2
     );
 
@@ -205,8 +205,8 @@ class Breakscape {
 
     // Select the correct regex and replacer for the text format and location
     const { regex, replacer } = this.selectUnbreakscapeRegexAndReplacer(
-      opts.textFormat,
-      opts.textLocation
+      opts.format,
+      opts.location
     );
 
     const unbreakscapeStr = (str: string) => {
@@ -297,7 +297,7 @@ class Breakscape {
     if (textLocation === TextLocation.tag) {
       regex = BREAKSCAPE_PLAIN_TAG_REGEX;
       replacer = BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER;
-      if (!v2 && textFormat === TextFormat.bitmarkText) {
+      if (!v2 && textFormat === TextFormat.bitmarkPlusPlus) {
         regex = BREAKSCAPE_BITMARK_TAG_REGEX;
         replacer = BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER;
       }
@@ -305,7 +305,7 @@ class Breakscape {
       // if (textLocation === TextLocation.body) {
       regex = BREAKSCAPE_PLAIN_BODY_REGEX;
       replacer = BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER;
-      if (textFormat === TextFormat.bitmarkText) {
+      if (textFormat === TextFormat.bitmarkPlusPlus) {
         if (v2) {
           // Hack for v2 breakscaping (still needed??)
           regex = BREAKSCAPE_V2_BODY_REGEX;
@@ -331,7 +331,7 @@ class Breakscape {
     textFormat: string,
     textLocation: string
   ): { regex: RegExp; replacer: string } {
-    const isBitmarkText = textFormat === TextFormat.bitmarkText;
+    const isBitmarkText = textFormat === TextFormat.bitmarkPlusPlus;
     const isPlain = !isBitmarkText;
 
     let regex: RegExp = UNBREAKSCAPE_REGEX;
