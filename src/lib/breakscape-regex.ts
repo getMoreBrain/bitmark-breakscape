@@ -5,6 +5,7 @@
  *  (c) 2025 — MIT / public domain
  */
 
+import { buildInfo } from '../generated/build-info';
 import { BreakscapeOptions } from './model/BreakscapeOptions';
 import { TextFormat } from './model/TextFormat';
 import { TextLocation } from './model/TextLocation';
@@ -99,6 +100,73 @@ function isString(obj: unknown): boolean {
   return typeof obj === 'string' || obj instanceof String;
 }
 
+// For breakscaping, select the correct regex and replacer for the text format and location.
+/**
+ * For breakscaping, select the correct regex and replacer for the text format and location.
+ *
+ * @param textFormat the format of the text
+ * @param textLocation the location of the text
+ * @param v2 if true, use v2 breakscaping
+ * @returns the regex and replacer
+ */
+function selectBreakscapeRegexAndReplacer(
+  textFormat: string,
+  textLocation: string,
+  v2: boolean | undefined
+): { regex: RegExp; replacer: string } {
+  let regex: RegExp;
+  let replacer: string;
+
+  if (textLocation === TextLocation.tag) {
+    regex = BREAKSCAPE_PLAIN_TAG_REGEX;
+    replacer = BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER;
+    if (!v2 && textFormat === TextFormat.bitmarkPlusPlus) {
+      regex = BREAKSCAPE_BITMARK_TAG_REGEX;
+      replacer = BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER;
+    }
+  } else {
+    regex = BREAKSCAPE_PLAIN_BODY_REGEX;
+    replacer = BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER;
+    if (textFormat === TextFormat.bitmarkPlusPlus) {
+      if (v2) {
+        regex = BREAKSCAPE_V2_BODY_REGEX;
+        replacer = BREAKSCAPE_V2_BODY_REGEX_REPLACER;
+      } else {
+        regex = BREAKSCAPE_BITMARK_BODY_REGEX;
+        replacer = BREAKSCAPE_BITMARK_BODY_REGEX_REPLACER;
+      }
+    }
+  }
+
+  return { regex, replacer };
+}
+
+// For unbreakscaping, select the correct regex and replacer for the text format and location.
+/**
+ * For unbreakscaping, select the correct regex and replacer for the text format and location.
+ *
+ * @param textFormat the format of the text
+ * @param textLocation the location of the text
+ * @returns the regex and replacer
+ */
+function selectUnbreakscapeRegexAndReplacer(
+  textFormat: string,
+  textLocation: string
+): { regex: RegExp; replacer: string } {
+  const isBitmarkText = textFormat === TextFormat.bitmarkPlusPlus;
+  const isPlain = !isBitmarkText;
+
+  let regex: RegExp = UNBREAKSCAPE_REGEX;
+  let replacer: string = UNBREAKSCAPE_REGEX_REPLACER;
+
+  if (textLocation === TextLocation.body && isPlain) {
+    regex = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX;
+    replacer = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER;
+  }
+
+  return { regex, replacer };
+}
+
 // -----------------------------------------------------------------------------
 //  ╭──────────────────────────────────────────────────────────────────────────╮
 //  │ 2.  PUBLIC  API                                                         │
@@ -107,57 +175,62 @@ class Breakscape {
   public readonly EMPTY_STRING = '' as string;
 
   /**
-   * Breakscape a string or an array of strings.
-   * If the input is an array, a new array will be returned.
+   * Escapes special characters in bitmark text by adding caret (^) characters.
    *
-   * @param val input value
-   * @param options options for breakscaping
-   * @param modifyArray
-   * @returns the input value with any strings breakscaped.
+   * This method processes text to prevent special characters from being interpreted
+   * as bitmark markup. It handles various scenarios including:
+   * - Tag triggers after '[' characters
+   * - Paired punctuation marks
+   * - Hat characters (^)
+   * - End-of-tag brackets
+   * - Beginning-of-line markers
+   *
+   * IMPORTANT: Breakscaping differs depending on the bit text format, and if the text will
+   * be used in a tag or in the body of a bitmark. The default is bitmark++ in the body.
+   * If the text is to be used in a tag, or is not bitmark++, you must specify the textFormat
+   * and textLocation options.
+   *
+   * @param val - The input to breakscape. Can be a string, array of strings, null, or undefined.
+   * @param opts - Optional configuration for the breakscape operation.
+   * @returns The breakscaped result with the same type as the input.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   *
+   * // Single string
+   * breakscape.breakscape('[.hello]'); // Returns '[^.hello]'
+   *
+   * // Array of strings
+   * breakscape.breakscape(['[.hello]', '[.world]']); // Returns ['[^.hello]', '[^.world]']
+   *
+   * // With options
+   * breakscape.breakscape('[.hello]', {
+   *   textFormat: TextFormat.bitmark++,
+   *   textLocation: TextLocation.body
+   * });
+   * ```
    */
-  public breakscape<T extends string | string[] | undefined>(
-    val: T,
-    options: BreakscapeOptions
-  ): T extends string ? string : T extends string[] ? string[] : undefined {
-    type R = T extends string
-      ? string
-      : T extends string[]
-        ? string[]
-        : undefined;
-
-    if (val == null) return val as unknown as R;
-
-    const opts = Object.assign({}, DEF, options);
-
-    // Select the correct regex and replacer for the text format and location
-    const { regex, replacer } = this.selectBreakscapeRegexAndReplacer(
-      opts.format,
-      opts.location,
-      opts.v2
-    );
-
-    const breakscapeStr = (str: string) => {
-      if (!str) return str;
-
-      str = str.replace(regex, replacer);
-
-      return str;
-    };
-
+  breakscape(val: string, opts?: BreakscapeOptions): string;
+  breakscape(val: string[], opts?: BreakscapeOptions): string[];
+  breakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
+  breakscape(
+    val: string | string[] | undefined | null,
+    opts: BreakscapeOptions = {}
+  ): string | string[] | undefined {
+    if (val == null) return undefined;
+    const options = Object.assign({}, DEF, opts);
     if (Array.isArray(val)) {
-      const newVal: unknown[] = opts.inPlaceArray ? val : new Array(val.length);
-      for (let i = 0, len = val.length; i < len; i++) {
-        const v = val[i];
-        if (isString(v)) {
-          newVal[i] = breakscapeStr(v as string);
-        }
-      }
-      val = newVal as T;
-    } else if (isString(val)) {
-      val = breakscapeStr(val as string) as T;
+      return val.map(v => this.breakscape(v, options)) as string[];
     }
-
-    return val as unknown as R;
+    const { regex, replacer } = selectBreakscapeRegexAndReplacer(
+      options.format,
+      options.location,
+      options.v2
+    );
+    let str = val;
+    str = str.replace(regex, replacer);
+    return str;
   }
 
   /**
@@ -165,53 +238,28 @@ class Breakscape {
    * If the input is an array, a new array will be returned.
    *
    * @param val input value
-   * @param modifyArray if true, the original array will be modified rather than a copy being made
+   * @param opts options for unbreakscaping
    * @returns the input value with any strings unbreakscaped.
    */
-  public unbreakscape<T extends string | string[] | undefined>(
-    val: T,
-    options: BreakscapeOptions
-  ): T extends string ? string : T extends string[] ? string[] : undefined {
-    type R = T extends string
-      ? string
-      : T extends string[]
-        ? string[]
-        : undefined;
-
-    if (val == null) return val as unknown as R;
-
-    const opts = Object.assign({}, DEF, options);
-
-    // Select the correct regex and replacer for the text format and location
-    const { regex, replacer } = this.selectUnbreakscapeRegexAndReplacer(
-      opts.format,
-      opts.location
-    );
-
-    const unbreakscapeStr = (str: string) => {
-      if (!str) return str;
-
-      str = str.replace(regex, replacer);
-
-      return str;
-    };
-
+  unbreakscape(val: string, opts?: BreakscapeOptions): string;
+  unbreakscape(val: string[], opts?: BreakscapeOptions): string[];
+  unbreakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
+  unbreakscape(
+    val: string | string[] | undefined | null,
+    opts: BreakscapeOptions = {}
+  ): string | string[] | undefined {
+    if (val == null) return undefined;
+    const options = Object.assign({}, DEF, opts);
     if (Array.isArray(val)) {
-      const newVal: unknown[] = opts.inPlaceArray ? val : new Array(val.length);
-      for (let i = 0, len = val.length; i < len; i++) {
-        const v = val[i];
-        if (isString(v)) {
-          newVal[i] = unbreakscapeStr(v as string);
-        } else {
-          newVal[i] = v;
-        }
-      }
-      val = newVal as T;
-    } else if (isString(val)) {
-      val = unbreakscapeStr(val as string) as T;
+      return val.map(v => this.unbreakscape(v, options)) as string[];
     }
-
-    return val as unknown as R;
+    const { regex, replacer } = selectUnbreakscapeRegexAndReplacer(
+      options.format,
+      options.location
+    );
+    let str = val;
+    str = str.replace(regex, replacer);
+    return str;
   }
 
   /**
@@ -258,70 +306,33 @@ class Breakscape {
   }
 
   /**
-   * For breakscaping, select the correct regex and replacer for the text format and location.
+   * Gets the version of the breakscape library.
    *
-   * @param textFormat the format of the text
-   * @param textLocation the location of the text
-   * @param v2 if true, use v2 breakscaping
-   * @returns the regex and replacer
+   * @returns The current version string of the library.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   * console.log(breakscape.version()); // e.g., "1.0.0"
+   * ```
    */
-  private selectBreakscapeRegexAndReplacer(
-    textFormat: string,
-    textLocation: string,
-    v2: boolean | undefined
-  ): { regex: RegExp; replacer: string } {
-    let regex: RegExp;
-    let replacer: string;
-
-    if (textLocation === TextLocation.tag) {
-      regex = BREAKSCAPE_PLAIN_TAG_REGEX;
-      replacer = BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER;
-      if (!v2 && textFormat === TextFormat.bitmarkPlusPlus) {
-        regex = BREAKSCAPE_BITMARK_TAG_REGEX;
-        replacer = BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER;
-      }
-    } else {
-      // if (textLocation === TextLocation.body) {
-      regex = BREAKSCAPE_PLAIN_BODY_REGEX;
-      replacer = BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER;
-      if (textFormat === TextFormat.bitmarkPlusPlus) {
-        if (v2) {
-          // Hack for v2 breakscaping (still needed??)
-          regex = BREAKSCAPE_V2_BODY_REGEX;
-          replacer = BREAKSCAPE_V2_BODY_REGEX_REPLACER;
-        } else {
-          regex = BREAKSCAPE_BITMARK_BODY_REGEX;
-          replacer = BREAKSCAPE_BITMARK_BODY_REGEX_REPLACER;
-        }
-      }
-    }
-
-    return { regex, replacer };
+  version(): string {
+    return buildInfo.version;
   }
 
   /**
-   * For unbreakscaping, select the correct regex and replacer for the text format and location.
+   * Gets the license information for the breakscape library.
    *
-   * @param textFormat the format of the text
-   * @param textLocation the location of the text
-   * @returns the regex and replacer
+   * @returns The license string for the library.
+   *
+   * @example
+   * ```typescript
+   * const breakscape = new Breakscape();
+   * console.log(breakscape.license()); // e.g., "MIT"
+   * ```
    */
-  private selectUnbreakscapeRegexAndReplacer(
-    textFormat: string,
-    textLocation: string
-  ): { regex: RegExp; replacer: string } {
-    const isBitmarkText = textFormat === TextFormat.bitmarkPlusPlus;
-    const isPlain = !isBitmarkText;
-
-    let regex: RegExp = UNBREAKSCAPE_REGEX;
-    let replacer: string = UNBREAKSCAPE_REGEX_REPLACER;
-
-    if (textLocation === TextLocation.body && isPlain) {
-      regex = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX;
-      replacer = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER;
-    }
-
-    return { regex, replacer };
+  license(): string {
+    return buildInfo.license;
   }
 }
 

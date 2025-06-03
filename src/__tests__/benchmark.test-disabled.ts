@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { Breakscape as BreakscapeChar } from '../lib/breakscape-loop';
 import { Breakscape as BreakscapeRegex } from '../lib/breakscape-regex';
-import { TextFormat, TextLocation } from '../lib/';
+import { TextFormat, TextLocation } from '../lib';
 
 // Test data sets for benchmarking
 const TEST_DATA = {

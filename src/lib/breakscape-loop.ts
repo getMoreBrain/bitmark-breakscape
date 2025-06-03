@@ -383,6 +383,25 @@ class Breakscape {
   }
 
   /**
+   * Breakscape a code string or an array of code strings.
+   * If the input is an array, a new array will be returned.
+   *
+   * @param val input value
+   * @param modifyArray if true, the original array will be modified rather than a copy being made
+   * @returns the input value with any strings breakscaped
+   */
+  public breakscapeCode<T extends unknown | unknown[] | undefined>(
+    _val: T,
+    _options?: BreakscapeOptions
+  ): T extends string ? string : T extends string[] ? string[] : undefined {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    _val; // to avoid unused variable warning
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    _options; // to avoid unused variable warning
+    throw new Error('breakscapeCode is not implemented.');
+  }
+
+  /**
    * Gets the version of the breakscape library.
    *
    * @returns The current version string of the library.
