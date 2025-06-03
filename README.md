@@ -53,6 +53,26 @@ const res = Breakscape.breakscape(['This is about an [.article]', 'Not __italic_
 
 ```
 
+### ESM / CommonJS
+
+This project is true ESM module, however, it is backwards compatible with CommonJS.
+
+If a project depends on this library and that project is still using CommonJS for modules, use
+the following code to import the library:
+
+#### TypeScript
+```typescript
+import type * as BreakscapeModuleType from '@gmb/bitmark-breakscape';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const BreakscapeModule = require('@gmb/bitmark-breakscape') as typeof BreakscapeModuleType;
+```
+
+#### JavaScript
+```javascript
+const BreakscapeModule = require('@gmb/bitmark-breakscape');
+```
+
 ## Development
 
 ### Prerequisites
