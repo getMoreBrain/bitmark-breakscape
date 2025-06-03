@@ -5,89 +5,19 @@
  *  (c) 2025 — MIT / public domain
  */
 
+import type { BreakscapeOptions } from './model/BreakscapeOptions';
 import { buildInfo } from '../generated/build-info';
-import { BreakscapeOptions } from './model/BreakscapeOptions';
 import { TextFormat } from './model/TextFormat';
 import { TextLocation } from './model/TextLocation';
+import type { TextFormatType } from './model/TextFormat';
+import type { TextLocationType } from './model/TextLocation';
+import * as RC from './regex-configs';
 
-const REGEX_MARKS = /([*`_!=])(?=\1)/; // BM_TAG: $1^  --BODY: $1^  ++BODY: $1^
-const REGEX_BLOCKS = /^(\|)(code[\s]*|code:|image:|[\s]*$)/; // ++BODY: $2^$3
-const REGEX_TITLE_BLOCKS = /^([#]{1,3})([^\S\r\n]+)/; // ++BODY: $4^$5
-const REGEX_LIST_BLOCKS = /^(•)([0-9]+[iI]*|[a-zA-Z]{1}|_|\+|-|)([^\S\r\n]+)/; // ++BODY: $6^$7$8
-const REGEX_START_OF_TAG = /(\[)([.@#▼►%!?+\-$_=&])/; // --BODY: $2^$3  ++BODY: $9^$10
-const REGEX_FOOTER_DIVIDER = /^(~)(~~~[ \t]*)$/; // --BODY: $4^$5  ++BODY: $11^$12
-const REGEX_PLAIN_TEXT_DIVIDER = /^(\$)(\$\$\$[ \t]*)$/; // --BODY: $6^$7  ++BODY: $13^$14
-const REGEX_END_OF_TAG = /(\^*])/; // BM_TAG: ^$2  PLAIN_TAG: ^$1
-const REGEX_BIT_START = /^(\[)(\^*)(\.)/; // PLAIN_BODY: $1^$2$3
-const REGEX_HATS = /(\^+)/; // BM_TAG: $3^  PLAIN_TAG: $2^  --BODY: ^$8  ++BODY: $15^  // Must be last
-
-const BREAKSCAPE_BITMARK_TAG_REGEX_SOURCE = `${REGEX_MARKS.source}|${REGEX_END_OF_TAG.source}|${REGEX_HATS.source}`;
-const BREAKSCAPE_PLAIN_TAG_REGEX_SOURCE = `${REGEX_END_OF_TAG.source}|${REGEX_HATS.source}`;
-const BREAKSCAPE_BITMARK_BODY_REGEX_SOURCE = `${REGEX_MARKS.source}|${REGEX_BLOCKS.source}|${REGEX_TITLE_BLOCKS.source}|${REGEX_LIST_BLOCKS.source}|${REGEX_START_OF_TAG.source}|${REGEX_FOOTER_DIVIDER.source}|${REGEX_PLAIN_TEXT_DIVIDER.source}|${REGEX_HATS.source}`;
-const BREAKSCAPE_PLAIN_BODY_REGEX_SOURCE = `${REGEX_BIT_START.source}`;
-
-// Breakscape regex for bitmarkText (bitmark+) in tags
-const BREAKSCAPE_BITMARK_TAG_REGEX = new RegExp(
-  BREAKSCAPE_BITMARK_TAG_REGEX_SOURCE,
-  'gm'
-);
-const BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER = '$1$3^$2';
-
-// Breakscape regex for plain text in tags
-const BREAKSCAPE_PLAIN_TAG_REGEX = new RegExp(
-  BREAKSCAPE_PLAIN_TAG_REGEX_SOURCE,
-  'gm'
-);
-const BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER = '$2^$1';
-
-// Breakscape regex for bitmarkText (bitmark++) in body
-const BREAKSCAPE_BITMARK_BODY_REGEX = new RegExp(
-  BREAKSCAPE_BITMARK_BODY_REGEX_SOURCE,
-  'gm'
-);
-const BREAKSCAPE_BITMARK_BODY_REGEX_REPLACER =
-  '$1$2$4$6$9$11$13$15^$3$5$7$8$10$12$14';
-
-// Breakscape regex for plain text in body
-const BREAKSCAPE_PLAIN_BODY_REGEX = new RegExp(
-  BREAKSCAPE_PLAIN_BODY_REGEX_SOURCE,
-  'gm'
-);
-const BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER = '$1^$2$3';
-
-// Breakscape regex for v2 tag. Not required, same as BREAKSCAPE_PLAIN_TAG_REGEX
-// const BREAKSCAPE_V2_TAG_REGEX = new RegExp('^(\\^*])|(\\^+)', 'gm');
-// const BREAKSCAPE_V2_TAG_REGEX_REPLACER = '$2^$1';
-
-// Breakscape regex for v2 body
-const BREAKSCAPE_V2_BODY_REGEX = new RegExp(
-  '^(?:(\\[)(\\^*)(\\.))|(\\^+)',
-  'gm'
-);
-const BREAKSCAPE_V2_BODY_REGEX_REPLACER = '$1$4^$2$3';
-
-// Unbreakscape regex for everything but plain text in the body
-const UNBREAKSCAPE_REGEX = new RegExp('\\^([\\^]*)', 'gm');
-const UNBREAKSCAPE_REGEX_REPLACER = '$1';
-
-// Unbreakscape regex for plain text in the body
-const UNBREAKSCAPE_PLAIN_IN_BODY_REGEX = new RegExp(
-  '^(\\[)\\^(\\^*)(\\.)',
-  'gm'
-);
-const UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER = '$1$2$3';
-
-// Regex explanation:
-// - match a single | or • or # character at the start of a line and capture in group 1
-// This will capture all new block characters within the code text.
-// Replace with group 1, ^
-// TODO: Not sure this is used any longer. #code blocks are not separate bits as far as I am aware?
-const BREAKSCAPE_CODE_REGEX = new RegExp('^(\\||•|#)', 'gm');
-const BREAKSCAPE_CODE_REGEX_REPLACER = '$1^';
-
+// default options
 const DEF = {
   format: TextFormat.bitmarkPlusPlus,
   location: TextLocation.body,
+  v2: false,
 } as const;
 
 /**
@@ -100,71 +30,63 @@ function isString(obj: unknown): boolean {
   return typeof obj === 'string' || obj instanceof String;
 }
 
-// For breakscaping, select the correct regex and replacer for the text format and location.
 /**
- * For breakscaping, select the correct regex and replacer for the text format and location.
- *
- * @param textFormat the format of the text
- * @param textLocation the location of the text
- * @param v2 if true, use v2 breakscaping
- * @returns the regex and replacer
+ * For breakscaping, select the correct regex and replacer for the text format, location, and v2 flag.
  */
 function selectBreakscapeRegexAndReplacer(
-  textFormat: string,
-  textLocation: string,
-  v2: boolean | undefined
+  textFormat: TextFormatType,
+  textLocation: TextLocationType,
+  v2 = false
 ): { regex: RegExp; replacer: string } {
-  let regex: RegExp;
-  let replacer: string;
-
   if (textLocation === TextLocation.tag) {
-    regex = BREAKSCAPE_PLAIN_TAG_REGEX;
-    replacer = BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER;
     if (!v2 && textFormat === TextFormat.bitmarkPlusPlus) {
-      regex = BREAKSCAPE_BITMARK_TAG_REGEX;
-      replacer = BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER;
+      return {
+        regex: RC.BREAKSCAPE_BITMARK_TAG_REGEX,
+        replacer: RC.BREAKSCAPE_BITMARK_TAG_REGEX_REPLACER,
+      };
     }
+    return {
+      regex: RC.BREAKSCAPE_PLAIN_TAG_REGEX,
+      replacer: RC.BREAKSCAPE_PLAIN_TAG_REGEX_REPLACER,
+    };
   } else {
-    regex = BREAKSCAPE_PLAIN_BODY_REGEX;
-    replacer = BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER;
     if (textFormat === TextFormat.bitmarkPlusPlus) {
       if (v2) {
-        regex = BREAKSCAPE_V2_BODY_REGEX;
-        replacer = BREAKSCAPE_V2_BODY_REGEX_REPLACER;
-      } else {
-        regex = BREAKSCAPE_BITMARK_BODY_REGEX;
-        replacer = BREAKSCAPE_BITMARK_BODY_REGEX_REPLACER;
+        return {
+          regex: RC.BREAKSCAPE_V2_BODY_REGEX,
+          replacer: RC.BREAKSCAPE_V2_BODY_REGEX_REPLACER,
+        };
       }
+      return {
+        regex: RC.BREAKSCAPE_BITMARK_BODY_REGEX,
+        replacer: RC.BREAKSCAPE_BITMARK_BODY_REGEX_REPLACER,
+      };
     }
+    return {
+      regex: RC.BREAKSCAPE_PLAIN_BODY_REGEX,
+      replacer: RC.BREAKSCAPE_PLAIN_BODY_REGEX_REPLACER,
+    };
   }
-
-  return { regex, replacer };
 }
 
-// For unbreakscaping, select the correct regex and replacer for the text format and location.
 /**
  * For unbreakscaping, select the correct regex and replacer for the text format and location.
- *
- * @param textFormat the format of the text
- * @param textLocation the location of the text
- * @returns the regex and replacer
  */
 function selectUnbreakscapeRegexAndReplacer(
-  textFormat: string,
-  textLocation: string
+  textFormat: TextFormatType,
+  textLocation: TextLocationType
 ): { regex: RegExp; replacer: string } {
-  const isBitmarkText = textFormat === TextFormat.bitmarkPlusPlus;
-  const isPlain = !isBitmarkText;
-
-  let regex: RegExp = UNBREAKSCAPE_REGEX;
-  let replacer: string = UNBREAKSCAPE_REGEX_REPLACER;
-
+  const isPlain = textFormat !== TextFormat.bitmarkPlusPlus;
   if (textLocation === TextLocation.body && isPlain) {
-    regex = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX;
-    replacer = UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER;
+    return {
+      regex: RC.UNBREAKSCAPE_PLAIN_IN_BODY_REGEX,
+      replacer: RC.UNBREAKSCAPE_PLAIN_IN_BODY_REGEX_REPLACER,
+    };
   }
-
-  return { regex, replacer };
+  return {
+    regex: RC.UNBREAKSCAPE_REGEX,
+    replacer: RC.UNBREAKSCAPE_REGEX_REPLACER,
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -286,7 +208,10 @@ class Breakscape {
 
     const breakscapeStr = (str: string) => {
       if (!str) return str;
-      return str.replace(BREAKSCAPE_CODE_REGEX, BREAKSCAPE_CODE_REGEX_REPLACER);
+      return str.replace(
+        RC.BREAKSCAPE_CODE_REGEX,
+        RC.BREAKSCAPE_CODE_REGEX_REPLACER
+      );
     };
 
     if (Array.isArray(val)) {
