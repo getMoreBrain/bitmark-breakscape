@@ -66,5 +66,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@ncoderz/superenum": "^0.2.5"
   }
 }

@@ -1,6 +1,6 @@
 # @gmb/bitmark-breakscape
 
-A TypeScript library for processing and parsing bitmark content with breakscape functionality.
+Breakscaping for bitmark text.
 
 ## Installation
 
