@@ -33,11 +33,8 @@ const INLINE_DBL = '*`_!=';
  * Predicate – true for every flavour that the spec calls “bitmark text”
  */
 function isBitmark(fmt: TextFormatType): boolean {
-  return (
-    fmt === TextFormat.bitmarkText ||
-    fmt === (TextFormat as any).bitmarkPlusPlus || // guard for ++ / -- if they exist
-    fmt === (TextFormat as any).bitmarkMinusMinus
-  );
+  // Only bitmarkText is defined in TextFormat, so only check for that
+  return fmt === TextFormat.bitmarkText;
 }
 
 // -----------------------------------------------------------------------------
@@ -56,8 +53,8 @@ function breakscapeBuf(
   let col = 0; // physical column (counting *original* chars only)
 
   for (let i = 0; i < len; ) {
-    const ch = src[i];
-    const nxt = i + 1 < len ? src[i + 1] : '';
+    const ch: string = src[i] ?? '';
+    const nxt: string = i + 1 < len ? (src[i + 1] ?? '') : '';
 
     // Hard reset after newline ------------------------------------------------
     if (ch === '\n') {
@@ -176,7 +173,7 @@ function unbreakscapeBuf(
   const len = src.length;
 
   for (let i = 0; i < len; ) {
-    const ch = src[i];
+    const ch: string = src[i] ?? '';
 
     // 1) HATS – remove exactly one ^ from every run (bitmark or inside tag)
     if ((isBitmark(fmt) || loc === TextLocation.tag) && ch === '^') {
@@ -231,38 +228,42 @@ function isString(x: unknown): x is string {
 }
 
 class Breakscape {
-  breakscape<T extends string | string[] | undefined>(
-    val: T,
+  breakscape(val: string, opts?: BreakscapeOptions): string;
+  breakscape(val: string[], opts?: BreakscapeOptions): string[];
+  breakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
+  breakscape(
+    val: string | string[] | undefined | null,
     opts: BreakscapeOptions = {}
-  ): T extends string ? string : T extends string[] ? string[] : undefined {
+  ): string | string[] | undefined {
     const { textFormat: fmt, textLocation: loc } = { ...DEF, ...opts };
-    if (val == null) return val as any;
-
+    if (val == null) return undefined;
     const proc = (s: string) => breakscapeBuf(s, fmt, loc);
-
     if (Array.isArray(val)) {
       const a = opts.modifyArray ? val : [...val];
-      for (let i = 0; i < a.length; i++) if (isString(a[i])) a[i] = proc(a[i]);
-      return a as any;
+      for (let i = 0; i < a.length; i++)
+        if (isString(a[i])) a[i] = proc(a[i] as string);
+      return a;
     }
-    return proc(val as string) as any;
+    return proc(val as string);
   }
 
-  unbreakscape<T extends string | string[] | undefined>(
-    val: T,
+  unbreakscape(val: string, opts?: BreakscapeOptions): string;
+  unbreakscape(val: string[], opts?: BreakscapeOptions): string[];
+  unbreakscape(val: undefined | null, opts?: BreakscapeOptions): undefined;
+  unbreakscape(
+    val: string | string[] | undefined | null,
     opts: BreakscapeOptions = {}
-  ): T extends string ? string : T extends string[] ? string[] : undefined {
+  ): string | string[] | undefined {
     const { textFormat: fmt, textLocation: loc } = { ...DEF, ...opts };
-    if (val == null) return val as any;
-
+    if (val == null) return undefined;
     const proc = (s: string) => unbreakscapeBuf(s, fmt, loc);
-
     if (Array.isArray(val)) {
       const a = opts.modifyArray ? val : [...val];
-      for (let i = 0; i < a.length; i++) if (isString(a[i])) a[i] = proc(a[i]);
-      return a as any;
+      for (let i = 0; i < a.length; i++)
+        if (isString(a[i])) a[i] = proc(a[i] as string);
+      return a;
     }
-    return proc(val as string) as any;
+    return proc(val as string);
   }
 }
 
